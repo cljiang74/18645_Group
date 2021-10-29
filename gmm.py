@@ -5,6 +5,10 @@ from scipy.stats import multivariate_normal
 
 Dataset = np.loadtxt('gmm_data.txt')
 model = mixture.GaussianMixture(n_components=3, covariance_type='spherical', init_params='random', verbose=1)
+"""
+resp = random_state.rand(n_samples, self.n_components)
+resp /= resp.sum(axis=1)[:, np.newaxis]
+"""
 model.fit(Dataset)
 print('weights_pi: {}.'.format(model.weights_))
 print('means: {}.'.format(model.means_))
