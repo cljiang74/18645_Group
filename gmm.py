@@ -17,13 +17,13 @@ covariances_ = model.covariances_
 precisions_cholesky_ = model.precisions_cholesky_
 
 total_time = np.zeros((10))
-for j in range(10000):
+for j in range(100000):
     for i in range(10):
         temp_dataset = Dataset[:i * 300 + 300] 
         start_time = time.time()
-        # pred = model._estimate_weighted_log_prob(temp_dataset)
-        pred = _estimate_log_gaussian_prob(temp_dataset, means_, precisions_cholesky_, 'spherical') + np.log(weights_)
-        total_time[i] += time.time() - start_time
+        pred, time_tmp = _estimate_log_gaussian_prob(temp_dataset, means_, precisions_cholesky_, 'spherical')
+        pred += np.log(weights_)
+        total_time[i] += time_tmp
         pred = pred.argmax(axis=1)
 plt.plot(np.arange(10) * 300 + 300, total_time)
 plt.savefig('total_time.jpg', dpi = 200)
