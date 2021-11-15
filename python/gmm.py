@@ -17,7 +17,7 @@ covariances_ = model.covariances_
 precisions_cholesky_ = model.precisions_cholesky_
 
 total_time = np.zeros((10))
-for j in range(100000):
+for j in range(1):
     for i in range(10):
         temp_dataset = Dataset[:i * 300 + 300] 
         start_time = time.time()

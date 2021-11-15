@@ -13,4 +13,5 @@ def _estimate_log_gaussian_prob(X, means, precisions_chol, covariance_type = "sp
         - kernel_out
         + np.outer(np.einsum("ij,ij->i", X, X), precisions)
     )
+    print(log_prob.shape)
     return -0.5 * (n_features * np.log(2 * np.pi) + log_prob) + log_det, end_time
