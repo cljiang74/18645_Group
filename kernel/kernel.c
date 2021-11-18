@@ -16,8 +16,9 @@ double* _estimate_log_gaussian_prob(double *X,
     double *log_prob2 = (double*) memalign(64, n_samples * n_components * sizeof(double)); // shape: [n_samples, n_components]
     double *log_prob3 = (double*) memalign(64, n_samples * n_components * sizeof(double)); // shape: [n_samples, n_components]
     double *res = (double*) memalign(64, n_samples * n_components * sizeof(double)); // shape: [n_samples, n_components]
-    double *log_prob1_np_sum = (double*) memalign(64, n_components * sizeof(double)); // shape: [n_samples, n_components]
-    double *log_prob1_means_sq = (double*) memalign(64, n_components * n_features * sizeof(double)); // shape: [n_samples, n_components]
+    double *log_prob1_np_sum = (double*) memalign(64, n_components * sizeof(double)); // shape: [n_components]
+    double *log_prob1_means_sq = (double*) memalign(64, n_components * n_features * sizeof(double)); // shape: [n_components, n_features]
+    double *log_prob2_means_T_precisions = (double*) memalign(64, n_features * n_components * sizeof(double)); // shape: [n_features, n_components]
     
     for(int i = 0; i < n_components; i++) {
         log_det[i] = n_features * log(precisions_chol[i]);
@@ -32,11 +33,17 @@ double* _estimate_log_gaussian_prob(double *X,
     }
     for(int i = 0; i < n_components; i++) {
         for (int j = 0; i < n_features; j++) {
-            log_prob1_np_sum[i] += log_prob1_means_sq[i * n_features + j];
+            log_prob1[i] += log_prob1_means_sq[i * n_features + j];
         }
-        log_prob1_np_sum[i] *= precisions[i];
+        log_prob1[i] *= precisions[i];
         
     }
+    for (int i = 0; i < n_components; i++) {
+        for (int j = 0; j < n_features, j++) {
+            log_prob2_means_T_precisions[i + j * n_components] = means[j + i * n_features] * precisions[i];
+        }
+    }
+
     return res;
 }
 
