@@ -101,6 +101,8 @@ double* _estimate_log_gaussian_prob(double *X,
     return res;
 }
 
+
+// Unused code
 // def _estimate_log_gaussian_prob(X, means, precisions_chol, covariance_type = "spherical"):
 //     n_samples, n_features = X.shape
 //     log_det = n_features * (np.log(precisions_chol))
