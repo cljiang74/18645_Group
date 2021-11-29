@@ -16,6 +16,12 @@ means_ = model.means_
 covariances_ = model.covariances_
 precisions_cholesky_ = model.precisions_cholesky_
 
+# Save numpy arrays to txt files for c kernel to read
+with open("dataset.txt", "w") as f:
+    for i in range(len(Dataset)):
+        for j in range(len(Dataset[0])):
+            f.write(Dataset[i, j])
+
 total_time = np.zeros((10))
 for j in range(1):
     for i in range(10):

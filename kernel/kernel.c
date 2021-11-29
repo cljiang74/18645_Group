@@ -5,6 +5,17 @@
 
 #define PI 3.1415926535
 
+void input() {
+    unsigned int num_IA = N + 1;
+    unsigned int num_JA = NUM_A;	
+
+    IA = (unsigned int*)malloc((N+1) * sizeof(unsigned int));
+    JA = (unsigned int*)malloc(NUM_A * sizeof(unsigned int));	
+
+    for(unsigned int i = 0; i<num_IA; i++) scanf("%d", &IA[i]);
+    for(unsigned int i = 0; i<num_JA; i++) scanf("%d", &JA[i]);
+}
+
 double* _estimate_log_gaussian_prob(double *X,
                                    int n_samples,
                                    int n_features,
