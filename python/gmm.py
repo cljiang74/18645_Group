@@ -14,11 +14,11 @@ covariances_ = model.covariances_
 precisions_cholesky_ = model.precisions_cholesky_
 
 # Save numpy arrays to txt files for c kernel to read
-with open("precisions_cholesky.txt", "w") as f:
+with open("../kernel/precisions_cholesky.txt", "w") as f:
     for i in range(len(precisions_cholesky_)):
             f.write(str(precisions_cholesky_[i]) + "\n")
 
-with open("means.txt", "w") as f:
+with open("../kernel/means.txt", "w") as f:
     for i in range(len(means_)):
         for j in range(len(means_[0])):
             f.write(str(means_[i, j]) + "\n")
@@ -41,12 +41,12 @@ for i, (color) in enumerate(zip(['blue', 'green', 'red'])):
 plt.savefig('First and second dimensions plot.jpg', dpi=500)
 plt.clf()
 for i, (color) in enumerate(zip(['blue', 'green', 'red'])):
-    plt.scatter(Dataset[pred == i, 2], Dataset[pred == i, 3], 5, color=color)
-plt.savefig('Third and fourth dimensions plot.jpg', dpi=500)
+    plt.scatter(Dataset[pred == i, 1], Dataset[pred == i, 2], 5, color=color)
+plt.savefig('Second and third dimensions plot.jpg', dpi=500)
 plt.clf()
 for i, (color) in enumerate(zip(['blue', 'green', 'red'])):
-    plt.scatter(Dataset[pred == i, 3], Dataset[pred == i, 4], 5, color=color)
-plt.savefig('Fourth and fifth dimensions plot.jpg', dpi=500)
+    plt.scatter(Dataset[pred == i, 2], Dataset[pred == i, 3], 5, color=color)
+plt.savefig('Third and fourth dimensions plot.jpg', dpi=500)
 
 mu_t = [np.random.rand(5) for _ in range(3)]
 mu_t1 = [np.random.rand(5) for _ in range(3)]

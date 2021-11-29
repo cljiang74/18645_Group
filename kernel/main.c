@@ -5,13 +5,60 @@
 
 #define PI 3.1415926535
 
-double* _estimate_log_gaussian_prob(double *X,
+int n_samples = 3000;
+int n_features = 5;
+int n_components = 3;
+
+double *X;
+double *means;
+double *precisions_chol;
+
+void input() {
+    X = (double*)memalign(64, n_samples * n_features * sizeof(double));
+    means = (double*)memalign(64, n_components * n_features * sizeof(double));
+    precisions_chol = (double*)memalign(64, n_components * sizeof(double));
+
+    for(unsigned int i = 0; i<n_samples * n_features; i++) scanf("%lf", &X[i]);
+    for(unsigned int i = 0; i<n_components * n_features; i++) scanf("%lf", &means[i]);
+    for(unsigned int i = 0; i<n_components; i++) scanf("%lf", &precisions_chol[i]);
+}
+
+double* estimate_log_gaussian_prob(double *X,
+                                   int n_samples,
+                                   int n_features,
+                                   int n_components,
+                                   double *means, 
+                                   double *precisions_chol);
+
+int main(int argc, char **argv)
+{
+    input();
+    for(int i = 0; i < n_components; i++){
+        // for (int j =0; j < n_features; j++){
+            // printf("%lf ", means[i * n_features + j]);
+            printf("%lf ", precisions_chol[i]);
+        // }
+        // printf("\n");
+    }
+    double *res;
+    res = (double *)estimate_log_gaussian_prob(X, n_samples, n_features, n_components, means, precisions_chol);
+    for(int i = 0; i<n_samples; i++){
+        for (int j =0; j < n_components; j++){
+            printf("%lf ", res[i * n_components + j]);
+        }
+        printf("\n");
+    }
+    return 0;
+}
+
+
+double* estimate_log_gaussian_prob(double *X,
                                    int n_samples,
                                    int n_features,
                                    int n_components,
                                    double *means, 
                                    double *precisions_chol)
-{   
+{ 
     double *log_det = (double*) memalign(64, n_components * sizeof(double));
     double *precisions = (double*) memalign(64, n_components * sizeof(double));
     double *log_prob1 = (double*) memalign(64, n_components * sizeof(double)); // shape: [n_components,]
