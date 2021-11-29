@@ -8,19 +8,20 @@ from sklearn_gmm import _estimate_log_gaussian_prob
 Dataset = np.loadtxt('gmm_data.txt')
 model = mixture.GaussianMixture(n_components=3, covariance_type='spherical', init_params='random', verbose=1)
 model.fit(Dataset)
-print('weights_pi: {}.'.format(model.weights_))
-print('means: {}.'.format(model.means_))
-print('covariances: {}.'.format(model.covariances_))
 weights_ = model.weights_
 means_ = model.means_
 covariances_ = model.covariances_
 precisions_cholesky_ = model.precisions_cholesky_
 
 # Save numpy arrays to txt files for c kernel to read
-with open("dataset.txt", "w") as f:
-    for i in range(len(Dataset)):
-        for j in range(len(Dataset[0])):
-            f.write(Dataset[i, j])
+with open("precisions_cholesky.txt", "w") as f:
+    for i in range(len(precisions_cholesky_)):
+            f.write(str(precisions_cholesky_[i]) + "\n")
+
+with open("means.txt", "w") as f:
+    for i in range(len(means_)):
+        for j in range(len(means_[0])):
+            f.write(str(means_[i, j]) + "\n")
 
 total_time = np.zeros((10))
 for j in range(1):
