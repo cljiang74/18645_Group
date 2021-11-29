@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <malloc.h>
 #include "immintrin.h"
 
 #define PI 3.1415926535
@@ -18,9 +19,9 @@ void input() {
     means = (double*)memalign(64, n_components * n_features * sizeof(double));
     precisions_chol = (double*)memalign(64, n_components * sizeof(double));
 
-    for(unsigned int i = 0; i<n_samples * n_features; i++) scanf("%lf", &X[i]);
-    for(unsigned int i = 0; i<n_components * n_features; i++) scanf("%lf", &means[i]);
-    for(unsigned int i = 0; i<n_components; i++) scanf("%lf", &precisions_chol[i]);
+    for(int i = 0; i<n_samples * n_features; i++) scanf("%lf", &X[i]);
+    for(int i = 0; i<n_components * n_features; i++) scanf("%lf", &means[i]);
+    for(int i = 0; i<n_components; i++) scanf("%lf", &precisions_chol[i]);
 }
 
 double* estimate_log_gaussian_prob(double *X,
@@ -33,15 +34,8 @@ double* estimate_log_gaussian_prob(double *X,
 int main(int argc, char **argv)
 {
     input();
-    for(int i = 0; i < n_components; i++){
-        // for (int j =0; j < n_features; j++){
-            // printf("%lf ", means[i * n_features + j]);
-            printf("%lf ", precisions_chol[i]);
-        // }
-        // printf("\n");
-    }
-    double *res;
-    res = (double *)estimate_log_gaussian_prob(X, n_samples, n_features, n_components, means, precisions_chol);
+
+    double *res = (double *)estimate_log_gaussian_prob(X, n_samples, n_features, n_components, means, precisions_chol);
     for(int i = 0; i<n_samples; i++){
         for (int j =0; j < n_components; j++){
             printf("%lf ", res[i * n_components + j]);
@@ -68,7 +62,7 @@ double* estimate_log_gaussian_prob(double *X,
     double *log_prob1_np_sum = (double*) memalign(64, n_components * sizeof(double)); // shape: [n_components]
     double *log_prob1_means_sq = (double*) memalign(64, n_components * n_features * sizeof(double)); // shape: [n_components, n_features]
     double *log_prob2_means_T_precisions = (double*) memalign(64, n_features * n_components * sizeof(double)); // shape: [n_features, n_components]
-    double *log_prob3_einsum = (double*) memalign(64, n_features * n_components * sizeof(double)); // shape: [n_components]
+    double *log_prob3_einsum = (double*) memalign(64, n_samples * n_components * sizeof(double)); // shape: [n_components]
     
     for(int i = 0; i < n_components; i++) {
         log_det[i] = n_features * log(precisions_chol[i]);
@@ -86,13 +80,14 @@ double* estimate_log_gaussian_prob(double *X,
     // np.sum(means ** 2, 1) * precisions
     // [n_components]
     for(int i = 0; i < n_components; i++) {
-        for (int j = 0; i < n_features; j++) {
+        for (int j = 0; j < n_features; j++) {
             log_prob1[i] += log_prob1_means_sq[i * n_features + j];
         }
         log_prob1[i] *= precisions[i];
     }
-    
+
     // means.T * precisions
+    // [n_features, n_components]
     for (int i = 0; i < n_components; i++) {
         for (int j = 0; j < n_features; j++) {
             log_prob2_means_T_precisions[i + j * n_components] = means[j + i * n_features] * precisions[i];
@@ -108,14 +103,12 @@ double* estimate_log_gaussian_prob(double *X,
             }
         }
     }
-    
-    // np.einsum("ij,ij->i", X, X) 
-    for (int i=0; i<n_samples; i++) {
-        int row_sum = 0;
-        for (int j=0; j<n_features; j++) {
-            row_sum += X[j + i * n_features];
+
+    // np.einsum("ij,ij->i", X, X)
+    for (int i = 0; i < n_samples; i++) {
+        for (int j = 0; j < n_features; j++) {
+            log_prob3_einsum[i] += X[i * n_features + j] * X[i * n_features + j];
         }
-        log_prob3_einsum[i] = row_sum;
     }
 
     // np.outer(np.einsum("ij,ij->i", X, X), precisions)

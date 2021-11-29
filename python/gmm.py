@@ -14,14 +14,19 @@ covariances_ = model.covariances_
 precisions_cholesky_ = model.precisions_cholesky_
 
 # Save numpy arrays to txt files for c kernel to read
-with open("../kernel/precisions_cholesky.txt", "w") as f:
-    for i in range(len(precisions_cholesky_)):
-            f.write(str(precisions_cholesky_[i]) + "\n")
+with open("../kernel/dataset.txt", "w") as f:
+    for i in range(len(Dataset)):
+        for j in range(len(Dataset[0])):
+            f.write(str(Dataset[i, j]) + "\n")
 
 with open("../kernel/means.txt", "w") as f:
     for i in range(len(means_)):
         for j in range(len(means_[0])):
             f.write(str(means_[i, j]) + "\n")
+
+with open("../kernel/precisions_cholesky.txt", "w") as f:
+    for i in range(len(precisions_cholesky_)):
+            f.write(str(precisions_cholesky_[i]) + "\n")
 
 total_time = np.zeros((10))
 for j in range(1):
@@ -29,6 +34,8 @@ for j in range(1):
         temp_dataset = Dataset[:i * 300 + 300] 
         start_time = time.time()
         pred, time_tmp = _estimate_log_gaussian_prob(temp_dataset, means_, precisions_cholesky_, 'spherical')
+        if len(pred) == 3000:
+            np.savetxt("../kernel/reference.txt", pred, fmt='%.5lf')
         pred += np.log(weights_)
         total_time[i] += time_tmp
         pred = pred.argmax(axis=1)
@@ -47,26 +54,3 @@ plt.clf()
 for i, (color) in enumerate(zip(['blue', 'green', 'red'])):
     plt.scatter(Dataset[pred == i, 2], Dataset[pred == i, 3], 5, color=color)
 plt.savefig('Third and fourth dimensions plot.jpg', dpi=500)
-
-mu_t = [np.random.rand(5) for _ in range(3)]
-mu_t1 = [np.random.rand(5) for _ in range(3)]
-while np.abs(np.mean(mu_t) - np.mean(mu_t1)) > 0.001:
-    mu_t = mu_t1
-    pdf = [multivariate_normal.pdf(Dataset, mean=mu_t[i], cov=covariances_[i]) for i in range(3)]
-    E = [pdf[i] * weights_[i] / (sum(pdf[i] * weights_[i] for i in range(3))) for i in range(3)]
-    mu_t1 = [sum(E[i][:, None]*Dataset)/sum(E[i]) for i in range(3)]
-print('mu_t1: {}'.format(mu_t1))
-
-mu_t = [np.random.rand(5) for _ in range(3)]
-mu_t1 = [np.random.rand(5) for _ in range(3)]
-pi_t = [np.random.rand(1) for _ in range(3)]
-pi_t1 = [np.random.rand(1) for _ in range(3)]
-while np.abs(np.mean(mu_t) - np.mean(mu_t1)) and np.abs(np.mean(pi_t) - np.mean(pi_t1)) > 0.001:
-    mu_t = mu_t1
-    pi_t = pi_t1
-    pdf = [multivariate_normal.pdf(Dataset, mean=mu_t[i], cov=covariances_[i]) for i in range(3)]
-    E = [pdf[i] * pi_t[i] / (sum(pdf[i] * pi_t[i] for i in range(3))) for i in range(3)]
-    mu_t1 = [sum(E[i][:, None]*Dataset)/sum(E[i]) for i in range(3)]
-    pi_t1 = [sum(E[i])/len(Dataset) for i in range(3)]
-print('mu_t1: {}'.format(mu_t1))
-print('pi_t1: {}'.format(pi_t1))
