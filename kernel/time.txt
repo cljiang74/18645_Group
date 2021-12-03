@@ -4,14 +4,14 @@ precisions = precisions_chol ** 2
 means ** 2
 21
 np.sum(means ** 2, 1) * precisions
-18
+21
 means.T * precisions
-129
+21
 2 * np.dot(X, means.T * precisions)
-248697
+103125
 np.einsum('ij,ij->i', X, X)
-53892
+59721
 np.outer(np.einsum('ij,ij->i', X, X), precisions)
-66450
+86604
 -0.5 * (n_features * np.log(2 * np.pi) + log_prob) + log_det, end_time
-92940
+103704
