@@ -5,7 +5,8 @@ from scipy.stats import multivariate_normal
 import time
 from sklearn_gmm import _estimate_log_gaussian_prob
 
-Dataset = np.loadtxt('gmm_data.txt')
+# Dataset = np.loadtxt('gmm_data.txt')
+Dataset = np.loadtxt('gmm_data_droped.txt')
 model = mixture.GaussianMixture(n_components=3, covariance_type='spherical', init_params='random', verbose=1)
 model.fit(Dataset)
 weights_ = model.weights_

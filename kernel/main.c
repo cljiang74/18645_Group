@@ -7,7 +7,7 @@
 #define PI 3.1415926535
 
 int n_samples = 3000;
-int n_features = 5;
+int n_features = 4;
 int n_components = 3;
 
 double *X;
