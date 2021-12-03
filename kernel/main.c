@@ -76,6 +76,10 @@ double* estimate_log_gaussian_prob(double *X,
     double *log_prob3_einsum = (double*) memalign(64, n_samples * n_components * sizeof(double)); // shape: [n_components]
     FILE* fp = fopen("time.txt", "w");
     unsigned long long t0, t1;
+
+    fprintf(fp, "performance in sequential code\n");
+    fprintf(fp, "precisions = precisions_chol ** 2\n");
+    t0 = rdtsc();
     for(int i = 0; i < n_components; i++) {
         log_det[i] = n_features * log(precisions_chol[i]);
         precisions[i] = precisions_chol[i] * precisions_chol[i]; // SIMD
@@ -83,14 +87,31 @@ double* estimate_log_gaussian_prob(double *X,
         // np.sum(means ** 2, 1): MPI_Reduce [n_components, n_features] -> [n_components,]
     
     }
+    t1 = rdtsc();
+    fprintf(fp, "%lld\n", t1 - t0);
 
-    fprintf(fp, "performance in sequential code\n");
+    
     fprintf(fp, "means ** 2\n");
     // means ** 2
+    __m256d c_temp_1 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c_temp_2 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c_temp_3 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d means_temp_1 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d means_temp_2 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d means_temp_3 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
     t0 = rdtsc();
-    for(int i = 0; i < n_components * n_features; i++) {
-        log_prob1_means_sq[i] = means[i] * means[i];
-    }
+    means_temp_1 = _mm256_load_pd((double *)&means[0]);
+    means_temp_2 = _mm256_load_pd((double *)&means[4]);
+    means_temp_3 = _mm256_load_pd((double *)&means[8]);
+    c_temp_1 = _mm256_fmadd_pd(means_temp_1, means_temp_1, c_temp_1);
+    c_temp_2 = _mm256_fmadd_pd(means_temp_2, means_temp_2, c_temp_2);
+    c_temp_3 = _mm256_fmadd_pd(means_temp_3, means_temp_3, c_temp_3);
+    _mm256_store_pd((double *)&log_prob1_means_sq[0], c_temp_1);
+    _mm256_store_pd((double *)&log_prob1_means_sq[4], c_temp_2);
+    _mm256_store_pd((double *)&log_prob1_means_sq[8], c_temp_3);
+    // for(int i = 0; i < n_components * n_features; i++) {
+    //     log_prob1_means_sq[i] = means[i] * means[i];
+    // }
     t1 = rdtsc();
     fprintf(fp, "%lld\n", t1 - t0);
 
