@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     fp = fopen("res.txt", "w");
     for(int i = 0; i<n_samples; i++){
         for (int j =0; j < n_components; j++){
-            fprintf(fp,"%lf ", res[i * n_components + j]);
+            fprintf(fp,"%.5lf ", res[i * n_components + j]);
         }
         fprintf(fp, "\n");
     }
@@ -69,8 +69,6 @@ double* estimate_log_gaussian_prob(double *X,
     double *log_prob3 = (double*) memalign(64, n_samples * n_components * sizeof(double)); // shape: [n_samples, n_components]
     double *res = (double*) memalign(64, n_samples * n_components * sizeof(double)); // shape: [n_samples, n_components]
     double *means_T = (double*) memalign(64, n_features * n_features * sizeof(double)); // shape: [n_features, n_features], add dummy
-    double *log_prob1_np_sum = (double*) memalign(64, n_components * sizeof(double)); // shape: [n_components]
-    double *log_prob1_means_sq = (double*) memalign(64, n_components * n_features * sizeof(double)); // shape: [n_components, n_features]
     double *log_prob2_means_T_precisions = (double*) memalign(64, n_features * n_components * sizeof(double)); // shape: [n_features, n_components]
     double *log_prob3_einsum = (double*) memalign(64, n_samples * n_components * sizeof(double)); // shape: [n_components]
     FILE* fp = fopen("time.txt", "w");
@@ -184,7 +182,7 @@ double* estimate_log_gaussian_prob(double *X,
         _mm256_store_pd(reduce_temp_2, X_meansT_mul_temp_2);
         _mm256_store_pd(reduce_temp_3, X_meansT_mul_temp_3);
 
-        log_prob2[i * n_components] = reduce_temp_1[0] + reduce_temp_1[1] +reduce_temp_1[2] + reduce_temp_1[3];
+        log_prob2[i * n_components + 0] = reduce_temp_1[0] + reduce_temp_1[1] +reduce_temp_1[2] + reduce_temp_1[3];
         log_prob2[i * n_components + 1] = reduce_temp_2[0] + reduce_temp_2[1] +reduce_temp_2[2] + reduce_temp_2[3];
         log_prob2[i * n_components + 2] = reduce_temp_3[0] + reduce_temp_3[1] +reduce_temp_3[2] + reduce_temp_3[3];
     }
