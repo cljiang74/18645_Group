@@ -32,56 +32,57 @@ void input()
         scanf("%lf", &precisions_chol[i]);
 }
 
-// void mx_mul_kernel() {
-//     int               m,
-//     int               n,
-//     int               k,
-//     double*     restrict a,
-//     double*     restrict b,
-//     double*     restrict c
-// ){
-//     __m256d c0 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-//     __m256d c1 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-//     __m256d c2 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-//     __m256d c3 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-//     __m256d c4 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-//     __m256d c5 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-//     __m256d c6 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-//     __m256d c7 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-//     __m256d c8 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-//     __m256d a0, b0, b1, b2;
+// 3 * 12 kernel for matrix multiplication
+void mx_mul_kernel(
+    int               m,
+    int               n,
+    int               k,
+    double*     restrict a,
+    double*     restrict b,
+    double*     restrict c
+){
+    __m256d c0 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c1 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c2 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c3 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c4 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c5 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c6 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c7 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d c8 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+    __m256d a0, b0, b1, b2;
 
-//     for (int i = 0; i != k; ++i){
-//         b0 = _mm256_load_pd((double *)&b[i*n]);
-//         b1 = _mm256_load_pd((double *)&b[i*n + 4]);
-//         b2 = _mm256_load_pd((double *)&b[i*n + 8]);
+    for (int i = 0; i != k; ++i){
+        b0 = _mm256_load_pd((double *)&b[i*n]);
+        b1 = _mm256_load_pd((double *)&b[i*n + 4]);
+        b2 = _mm256_load_pd((double *)&b[i*n + 8]);
 
-//         a0 = _mm256_broadcast_sd((double *)&a[i*m]);
-//         c0 = _mm256_fmadd_pd(a0, b0, c0);
-//         c1 = _mm256_fmadd_pd(a0, b1, c1);
-//         c2 = _mm256_fmadd_pd(a0, b2, c2);
+        a0 = _mm256_broadcast_sd((double *)&a[i*m]);
+        c0 = _mm256_fmadd_pd(a0, b0, c0);
+        c1 = _mm256_fmadd_pd(a0, b1, c1);
+        c2 = _mm256_fmadd_pd(a0, b2, c2);
 
-//         a0 = _mm256_broadcast_sd((double *)&a[i*m+1]);
-//         c3 = _mm256_fmadd_pd(a0, b0, c3);
-//         c4 = _mm256_fmadd_pd(a0, b1, c4);
-//         c5 = _mm256_fmadd_pd(a0, b2, c5);
+        a0 = _mm256_broadcast_sd((double *)&a[i*m+1]);
+        c3 = _mm256_fmadd_pd(a0, b0, c3);
+        c4 = _mm256_fmadd_pd(a0, b1, c4);
+        c5 = _mm256_fmadd_pd(a0, b2, c5);
 
-//         a0 = _mm256_broadcast_sd((double *)&a[i*m+2]);
-//         c6 = _mm256_fmadd_pd(a0, b0, c6);
-//         c7 = _mm256_fmadd_pd(a0, b1, c7);
-//         c8 = _mm256_fmadd_pd(a0, b2, c8);
-//     }
+        a0 = _mm256_broadcast_sd((double *)&a[i*m+2]);
+        c6 = _mm256_fmadd_pd(a0, b0, c6);
+        c7 = _mm256_fmadd_pd(a0, b1, c7);
+        c8 = _mm256_fmadd_pd(a0, b2, c8);
+    }
 
-//     _mm256_store_pd((double *)&c[0*n], c0);
-//     _mm256_store_pd((double *)&c[0*n+4], c1);
-//     _mm256_store_pd((double *)&c[0*n+8], c2);
-//     _mm256_store_pd((double *)&c[1*n], c3);
-//     _mm256_store_pd((double *)&c[1*n+4], c4);
-//     _mm256_store_pd((double *)&c[1*n+8], c5);
-//     _mm256_store_pd((double *)&c[2*n], c6);
-//     _mm256_store_pd((double *)&c[2*n+4], c7);
-//     _mm256_store_pd((double *)&c[2*n+8], c8);
-// }
+    _mm256_store_pd((double *)&c[0*n], c0);
+    _mm256_store_pd((double *)&c[0*n+4], c1);
+    _mm256_store_pd((double *)&c[0*n+8], c2);
+    _mm256_store_pd((double *)&c[1*n], c3);
+    _mm256_store_pd((double *)&c[1*n+4], c4);
+    _mm256_store_pd((double *)&c[1*n+8], c5);
+    _mm256_store_pd((double *)&c[2*n], c6);
+    _mm256_store_pd((double *)&c[2*n+4], c7);
+    _mm256_store_pd((double *)&c[2*n+8], c8);
+}
 
 double *estimate_log_gaussian_prob(double *X,
                                    double *X_T,
@@ -266,6 +267,7 @@ double *estimate_log_gaussian_prob(double *X,
     //         }
     //     }
     // }
+    
 
     t1 = rdtsc();
     fprintf(fp, "%lld\n", t1 - t0);
