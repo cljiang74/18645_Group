@@ -7,6 +7,7 @@ from sklearn_gmm import _estimate_log_gaussian_prob
 
 # Dataset = np.loadtxt('gmm_data.txt')
 Dataset = np.loadtxt('gmm_data_droped.txt')
+Dataset_T = Dataset.T
 model = mixture.GaussianMixture(n_components=3, covariance_type='spherical', init_params='random', verbose=1)
 model.fit(Dataset)
 weights_ = model.weights_
@@ -19,6 +20,11 @@ with open("../kernel/dataset.txt", "w") as f:
     for i in range(len(Dataset)):
         for j in range(len(Dataset[0])):
             f.write(str(Dataset[i, j]) + "\n")
+
+with open("../kernel/dataset_T.txt", "w") as f:
+    for i in range(len(Dataset_T)):
+        for j in range(len(Dataset_T[0])):
+            f.write(str(Dataset_T[i, j]) + "\n")
 
 with open("../kernel/means.txt", "w") as f:
     for i in range(len(means_)):

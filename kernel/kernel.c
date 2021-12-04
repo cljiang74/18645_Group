@@ -6,11 +6,12 @@
 #define PI 3.1415926535
 
 double* _estimate_log_gaussian_prob(double *X,
-                                   int n_samples,
-                                   int n_features,
-                                   int n_components,
-                                   double *means, 
-                                   double *precisions_chol)
+                                    double *X_T,
+                                    int n_samples,
+                                    int n_features,
+                                    int n_components,
+                                    double *means, 
+                                    double *precisions_chol)
 {   
     double *log_det = (double*) memalign(64, n_components * sizeof(double));
     double *precisions = (double*) memalign(64, n_components * sizeof(double));
