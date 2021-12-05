@@ -404,16 +404,65 @@ double *estimate_log_gaussian_prob(double *X,
 
     fprintf(fp, "-0.5 * (n_features * np.log(2 * np.pi) + log_prob) + log_det, end_time\n");
     t0 = rdtsc();
-    // -0.5 * (n_features * np.log(2 * np.pi) + log_prob) + log_det, end_time
-    for (int i = 0; i < n_samples; i++)
+    // // -0.5 * (n_features * np.log(2 * np.pi) + log_prob) + log_det, end_time
+    // for (int i = 0; i < n_samples; i++)
+    // {
+    //     for (int j = 0; j < n_components; j++)
+    //     {
+    //         res[i * n_components + j] = -0.5 * (n_features * log(2 * PI) + log_prob1[j] -
+    //                                             log_prob2_T[j * n_samples + i] + log_prob3_T[j * n_samples + i]) +
+    //                                     log_det[j];
+    //     }
+    // }
+
+    //***********************
+    double *res_T = (double *)memalign(64, n_samples * n_components * sizeof(double));   
+    double con = n_features * log(2 * PI);
+    __m256d res_constant = _mm256_set_pd(con, con, con, con);
+    __m256d log_prob1_temp1 = _mm256_broadcast_sd((double *)&log_prob1[0]);
+    __m256d log_prob1_temp2 = _mm256_broadcast_sd((double *)&log_prob1[1]);
+    __m256d log_prob1_temp3 = _mm256_broadcast_sd((double *)&log_prob1[2]);
+    __m256d log_log_det_temp1 = _mm256_broadcast_sd((double *)&log_det[0]);
+    __m256d log_log_det_temp2 = _mm256_broadcast_sd((double *)&log_det[1]);
+    __m256d log_log_det_temp3 = _mm256_broadcast_sd((double *)&log_det[2]);
+    __m256d res_constant2 = _mm256_set_pd(-0.5, -0.5, -0.5, -0.5);
+    for(int i = 0; i < n_samples; i+=4)
+    {
+         __m256d log_prob2_T_temp1 = _mm256_load_pd((double *)&log_prob2_T[i]);
+         __m256d log_prob2_T_temp2 = _mm256_load_pd((double *)&log_prob2_T[i + n_samples]);
+         __m256d log_prob2_T_temp3 = _mm256_load_pd((double *)&log_prob2_T[i + 2*n_samples]);
+         __m256d log_prob3_T_temp1 = _mm256_load_pd((double *)&log_prob3_T[i]);
+         __m256d log_prob3_T_temp2 = _mm256_load_pd((double *)&log_prob3_T[i + n_samples]);
+         __m256d log_prob3_T_temp3 = _mm256_load_pd((double *)&log_prob3_T[i + 2*n_samples]);
+         __m256d res_temp1 = _mm256_add_pd(res_constant, log_prob1_temp1);
+         __m256d res_temp2 = _mm256_add_pd(res_constant, log_prob1_temp2);
+         __m256d res_temp3 = _mm256_add_pd(res_constant, log_prob1_temp3);
+         res_temp1 = _mm256_sub_pd(res_temp1, log_prob2_T_temp1);
+         res_temp2 = _mm256_sub_pd(res_temp2, log_prob2_T_temp2);
+         res_temp3 = _mm256_sub_pd(res_temp3, log_prob2_T_temp3);
+         res_temp1 = _mm256_add_pd(res_temp1, log_prob3_T_temp1);
+         res_temp2 = _mm256_add_pd(res_temp2, log_prob3_T_temp2);
+         res_temp3 = _mm256_add_pd(res_temp3, log_prob3_T_temp3);
+         res_temp1 = _mm256_mul_pd(res_temp1, res_constant2);
+         res_temp2 = _mm256_mul_pd(res_temp2, res_constant2);
+         res_temp3 = _mm256_mul_pd(res_temp3, res_constant2);
+         res_temp1 = _mm256_add_pd(res_temp1, log_log_det_temp1);
+         res_temp2 = _mm256_add_pd(res_temp2, log_log_det_temp2);
+         res_temp3 = _mm256_add_pd(res_temp3, log_log_det_temp3);
+         _mm256_store_pd((double *)&res_T[i], res_temp1);
+         _mm256_store_pd((double *)&res_T[i + n_samples], res_temp2);
+         _mm256_store_pd((double *)&res_T[i + 2*n_samples], res_temp3);
+
+    }
+   for (int i = 0; i < n_samples; i++)
     {
         for (int j = 0; j < n_components; j++)
         {
-            res[i * n_components + j] = -0.5 * (n_features * log(2 * PI) + log_prob1[j] -
-                                                log_prob2[i * n_components + j] + log_prob3[i * n_components + j]) +
-                                        log_det[j];
+            res[i * n_components + j] = res_T[j * n_samples + i];
         }
     }
+
+    // *********************************
     t1 = rdtsc();
     fprintf(fp, "%lld\n", t1 - t0);
 
