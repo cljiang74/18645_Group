@@ -1,17 +1,17 @@
 performance in sequential code
 precisions = precisions_chol ** 2
-18
+51
 means ** 2
-18
+21
 np.sum(means ** 2, 1) * precisions
-18
+24
 means.T * precisions
-18
+24
 2 * np.dot(X, means.T * precisions)
-319791420
+897507336
 np.einsum('ij,ij->i', X, X)
-61440
+100023
 np.outer(np.einsum('ij,ij->i', X, X), precisions)
-189480
+305952
 -0.5 * (n_features * np.log(2 * np.pi) + log_prob) + log_det, end_time
-108762
+155169

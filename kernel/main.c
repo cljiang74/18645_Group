@@ -50,10 +50,10 @@ void mx_mul_kernel(
     a3 = _mm256_load_pd((double *)&a[start + n_samples * 3]);  
 
     for(int i=0; i<n_components; i++) {
-        b0 = _mm256_broadcast_sd((double *)&b[i]);
-        b1 = _mm256_broadcast_sd((double *)&b[i + 3]);
-        b2 = _mm256_broadcast_sd((double *)&b[i + 6]);
-        b3 = _mm256_broadcast_sd((double *)&b[i + 9]);
+        b0 = _mm256_broadcast_sd((double *)&b[i*4]);
+        b1 = _mm256_broadcast_sd((double *)&b[i*4 + 1]);
+        b2 = _mm256_broadcast_sd((double *)&b[i*4 + 2]);
+        b3 = _mm256_broadcast_sd((double *)&b[i*4 + 3]);
 
         c0 = _mm256_fmadd_pd(a0, b0, c0);
         c0 = _mm256_fmadd_pd(a1, b1, c0);
@@ -272,9 +272,9 @@ double *estimate_log_gaussian_prob(double *X,
     // }
 
     // Test Mx Mul 
-    double A[] = {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4};
-    double B[] = {5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8}; 
-    double *C = (double *)memalign(64, n_components * sizeof(double)); 
+    // double A[] = {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4};
+    // double B[] = {5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8}; 
+    // double *C = (double *)memalign(64, n_components * sizeof(double)); 
 
     // for(int i=0; i < 16; i++) {
     //     printf("%lf ", X_T[i]);
