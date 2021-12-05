@@ -241,60 +241,9 @@ double *estimate_log_gaussian_prob(double *X,
     _mm256_store_pd((double *)&log_prob2_means_T_precisions[4], c_temp_2);
     _mm256_store_pd((double *)&log_prob2_means_T_precisions[8], c_temp_3);
 
-    double *reduce_temp_1 = (double *)memalign(64, n_features * sizeof(double));
-    double *reduce_temp_2 = (double *)memalign(64, n_features * sizeof(double));
-    double *reduce_temp_3 = (double *)memalign(64, n_features * sizeof(double));
-
-    // for (int i = 0; i < n_samples; i++)
-    // {
-    //     __m256d X_temp = _mm256_load_pd((double *)&X[i * n_features]);
-    //     __m256d meansT_temp_1 = _mm256_load_pd((double *)&log_prob2_means_T_precisions[0]);
-    //     __m256d X_meansT_mul_temp_1 = _mm256_mul_pd(X_temp, meansT_temp_1);
-    //     __m256d meansT_temp_2 = _mm256_load_pd((double *)&log_prob2_means_T_precisions[4]);
-    //     __m256d X_meansT_mul_temp_2 = _mm256_mul_pd(X_temp, meansT_temp_2);
-    //     __m256d meansT_temp_3 = _mm256_load_pd((double *)&log_prob2_means_T_precisions[8]);
-    //     __m256d X_meansT_mul_temp_3 = _mm256_mul_pd(X_temp, meansT_temp_3);
-
-    //     // Naive reduce
-    //     _mm256_store_pd(reduce_temp_1, X_meansT_mul_temp_1);
-    //     _mm256_store_pd(reduce_temp_2, X_meansT_mul_temp_2);
-    //     _mm256_store_pd(reduce_temp_3, X_meansT_mul_temp_3);
-
-    //     log_prob2[i * n_components + 0] = reduce_temp_1[0] + reduce_temp_1[1] + reduce_temp_1[2] + reduce_temp_1[3];
-    //     log_prob2[i * n_components + 1] = reduce_temp_2[0] + reduce_temp_2[1] + reduce_temp_2[2] + reduce_temp_2[3];
-    //     log_prob2[i * n_components + 2] = reduce_temp_3[0] + reduce_temp_3[1] + reduce_temp_3[2] + reduce_temp_3[3];
-    // }
-
-    // for(int i=0; i<n_components; i++) {
-    //     for(int j=0; j<n_samples; j++) {
-    //         log_prob2_T[i * n_samples + j] = log_prob2[j * n_components + i];
-    //     }
-    // }
-
-    // Test Mx Mul 
-    // double A[] = {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4};
-    // double B[] = {5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8}; 
-    // double *C = (double *)memalign(64, n_components * sizeof(double)); 
-
-    // for(int i=0; i < 16; i++) {
-    //     printf("%lf ", X_T[i]);
-    // }
-
-    // for(int i=0; i< n_features; i++) {
-    //     for(int j=0; j<n_components; j++) {
-    //         printf("%lf, ", log_prob2_means_T_precisions[i*n_components + j]);
-    //     }
-    //     printf("\n");
-    // }
-
+    // Fast multiply kernel
     for (int i = 0; i < n_samples; i+=4) {
         mx_mul_kernel(i, X_T, log_prob2_means_T_precisions, log_prob2_T);
-    }
-
-    for (int i=0; i< n_samples * n_components; i++) {
-        printf("%lf ", log_prob2_T[i]);
-        if((i+1) % n_components == 0)
-            printf("\n");
     }
 
     for(int i = 0; i < n_samples; i++) {
@@ -303,22 +252,11 @@ double *estimate_log_gaussian_prob(double *X,
         }
     }
 
-    for (int i=0; i< n_components * n_samples; i++) {
-        printf("%lf ", log_prob2[i]);
-        if((i+1) % n_components == 0)
-            printf("\n");
-    }
-
-    // // 2 * np.dot(X, means.T * precisions)
-    // // [n_samples, n_features] dot [n_features, n_components] -> [n_samples, n_components]
-    // for (int i = 0; i < n_samples; i++) {
-    //     for (int j = 0; j < n_components; j++) {
-    //         for (int k = 0; k < n_features; k++) {
-    //             log_prob2[i * n_components + j] += 2 * X[i * n_features + k] * log_prob2_means_T_precisions[k * n_components + j];
-    //         }
-    //     }
+    // for (int i=0; i< n_components * n_samples; i++) {
+    //     printf("%lf ", log_prob2[i]);
+    //     if((i+1) % n_components == 0)
+    //         printf("\n");
     // }
-
 
     t1 = rdtsc();
     fprintf(fp, "%lld\n", t1 - t0);
@@ -326,7 +264,6 @@ double *estimate_log_gaussian_prob(double *X,
     fprintf(fp, "np.einsum('ij,ij->i', X, X)\n");
     t0 = rdtsc();
     // np.einsum("ij,ij->i", X, X)
-
     // X column major order, use X_T
     __m256d c_temp_5 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
     __m256d c_temp_6 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
