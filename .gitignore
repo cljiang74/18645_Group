@@ -1,3 +1,4 @@
 python/__pycache__/*
 # kernel/*.txt
 kernel/*.x
+.DS_Store
