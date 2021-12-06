@@ -7,6 +7,7 @@ from sklearn_gmm import _estimate_log_gaussian_prob
 
 # Dataset = np.loadtxt('gmm_data.txt')
 Dataset = np.loadtxt('gmm_data_droped.txt')
+Dataset = np.tile(Dataset, (100, 1))
 model = mixture.GaussianMixture(n_components=3, covariance_type='spherical', init_params='random', verbose=1)
 model.fit(Dataset)
 weights_ = model.weights_
@@ -29,20 +30,22 @@ with open("../kernel/precisions_cholesky.txt", "w") as f:
     for i in range(len(precisions_cholesky_)):
             f.write(str(precisions_cholesky_[i]) + "\n")
 
-total_time = np.zeros((10))
-for j in range(1):
-    for i in range(10):
-        temp_dataset = Dataset[:i * 300 + 300] 
-        start_time = time.time()
-        pred, time_tmp = _estimate_log_gaussian_prob(temp_dataset, means_, precisions_cholesky_, 'spherical')
-        if len(pred) == 3000:
-            np.savetxt("../kernel/reference.txt", pred, fmt='%.5lf')
-        pred += np.log(weights_)
-        total_time[i] += time_tmp
-        pred = pred.argmax(axis=1)
-plt.plot(np.arange(10) * 300 + 300, total_time)
-plt.savefig('total_time.jpg', dpi = 200)
-plt.clf()
+runs = 100
+total_time = np.zeros((runs))
+for i in range(runs):
+    start_time = time.time()
+    pred, time_tmp = _estimate_log_gaussian_prob(Dataset, means_, precisions_cholesky_, 'spherical')
+    # pred = model.predict(Dataset)
+    time_tmp = time.time() - start_time
+    if i == 0:
+        np.savetxt("../kernel/reference.txt", pred, fmt='%.5lf')
+    pred += np.log(weights_)
+    total_time[i] = time_tmp
+    pred = pred.argmax(axis=1)
+print(np.mean(total_time))
+# plt.plot(np.arange(10) * 300 + 300, total_time)
+# plt.savefig('total_time.jpg', dpi = 200)
+# plt.clf()
 
 for i, (color) in enumerate(zip(['blue', 'green', 'red'])):
     plt.scatter(Dataset[pred == i, 0], Dataset[pred == i, 1], 5, color=color)

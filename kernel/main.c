@@ -6,7 +6,7 @@
 
 #define PI 3.1415926535
 
-int n_samples = 3000;
+int n_samples = 300000;
 int n_features = 4;
 int n_components = 3;
 
@@ -46,11 +46,9 @@ int main(int argc, char **argv)
     fp = fopen("res.txt", "w");
     for(int i = 0; i<n_samples; i++){
         for (int j =0; j < n_components; j++){
-            printf("%lf ", res[i * n_components + j]);
-            fprintf(fp,"%lf ", res[i * n_components + j]);
+            fprintf(fp,"%.5lf ", res[i * n_components + j]);
         }
         fprintf(fp, "\n");
-        printf("\n");
     }
     fclose(fp);
     return 0;
@@ -137,6 +135,7 @@ double* estimate_log_gaussian_prob(double *X,
     fprintf(fp, "np.einsum('ij,ij->i', X, X)\n");
     t0 = rdtsc();
     // np.einsum("ij,ij->i", X, X)
+    // # pragma omp parallel for num_threads(1)
     for (int i = 0; i < n_samples; i++) {
         for (int j = 0; j < n_features; j++) {
             log_prob3_einsum[i] += X[i * n_features + j] * X[i * n_features + j];
