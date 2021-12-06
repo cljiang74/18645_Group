@@ -14,6 +14,8 @@ double *X;
 double *X_T;
 double *means;
 double *precisions_chol;
+double time[7];
+int runs = 1;
 
 void input()
 {
@@ -52,7 +54,17 @@ int main(int argc, char **argv)
 {
     input();
 
-    double *res = (double *)estimate_log_gaussian_prob(X, X_T, n_samples, n_features, n_components, means, precisions_chol);
+    double *res;
+    for (int i = 0; i < runs; i++)
+    {
+        res = (double *)estimate_log_gaussian_prob(X, X_T, n_samples, n_features, n_components, means, precisions_chol);
+    }
+    // double *res = (double *)estimate_log_gaussian_prob(X, X_T, n_samples, n_features, n_components, means, precisions_chol);
+    printf("Time:\n");
+    for (int i = 0; i < 7; i++)
+    {
+        printf("%lf\n", time[i] / runs);
+    }
     FILE *fp;
     fp = fopen("res.txt", "w");
     for (int i = 0; i < n_samples; i++)
@@ -91,7 +103,7 @@ double *estimate_log_gaussian_prob(double *X,
     double *res = (double *)memalign(64, n_samples * n_components * sizeof(double));                           // shape: [n_samples, n_components]
     double *res_T = (double *)memalign(64, n_samples * n_components * sizeof(double));
     FILE *fp = fopen("time.txt", "w");
-    unsigned long long t0, t1;
+    unsigned long long t0, t1, t_sum;
 
     fprintf(fp, "performance in sequential code\n");
     fprintf(fp, "precisions = precisions_chol ** 2\n");
@@ -102,11 +114,12 @@ double *estimate_log_gaussian_prob(double *X,
     {
         log_det[i] = n_features * log(precisions_chol[i]);
     }
-    precisions_temp = _mm256_fmadd_pd(precisions_chol_temp, precisions_chol_temp, precisions_temp);
     t0 = rdtsc();
+    precisions_temp = _mm256_fmadd_pd(precisions_chol_temp, precisions_chol_temp, precisions_temp);
     _mm256_store_pd((double *)&precisions[0], precisions_temp);
 
     t1 = rdtsc();
+    time[0] += t1 - t0;
     fprintf(fp, "%lld\n", t1 - t0);
 
     // mean.T
@@ -121,11 +134,11 @@ double *estimate_log_gaussian_prob(double *X,
 
     fprintf(fp, "means ** 2\n");
     // means ** 2
+    t0 = rdtsc();
     __m256d c_temp_1 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
     __m256d c_temp_2 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
     __m256d c_temp_3 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
     __m256d c_temp_4 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
-    t0 = rdtsc();
     __m256d means_T_temp_1 = _mm256_load_pd((double *)&means_T[0]);
     __m256d means_T_temp_2 = _mm256_load_pd((double *)&means_T[4]);
     __m256d means_T_temp_3 = _mm256_load_pd((double *)&means_T[8]);
@@ -135,6 +148,7 @@ double *estimate_log_gaussian_prob(double *X,
     c_temp_3 = _mm256_fmadd_pd(means_T_temp_3, means_T_temp_3, c_temp_3);
     c_temp_4 = _mm256_fmadd_pd(means_T_temp_4, means_T_temp_4, c_temp_4);
     t1 = rdtsc();
+    time[1] += t1 - t0;
     fprintf(fp, "%lld\n", t1 - t0);
 
     fprintf(fp, "np.sum(means ** 2, 1) * precisions\n");
@@ -151,6 +165,7 @@ double *estimate_log_gaussian_prob(double *X,
     c_temp_1 = _mm256_mul_pd(c_temp_1, precisions_temp);
 
     t1 = rdtsc();
+    time[2] += t1 - t0;
     fprintf(fp, "%lld\n", t1 - t0);
 
     // Precalculate constant_broadcast in the final step
@@ -165,6 +180,7 @@ double *estimate_log_gaussian_prob(double *X,
 
     fprintf(fp, "2 * np.dot(X, means.T * precisions)\n");
     t0 = rdtsc();
+    t_sum = 0;
     // 2 * np.dot(X, means.T * precisions)
     //[n_samples, n_features] dot [n_features, n_components] -> [n_samples, n_components]
     __m256d precisions_broadcast_1 = _mm256_broadcast_sd((double *)&precisions[0]);
@@ -211,6 +227,7 @@ double *estimate_log_gaussian_prob(double *X,
         c_temp_7 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
         c_temp_8 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
         c_temp_9 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+        t0 = rdtsc();
         for (int j = 0; j < n_features; j++)
         {
             X_T_temp_1 = _mm256_load_pd((double *)&X_T[i + j * n_samples + 0]);
@@ -229,6 +246,7 @@ double *estimate_log_gaussian_prob(double *X,
             c_temp_8 = _mm256_fmadd_pd(X_T_temp_3, broad_temp2, c_temp_8);
             c_temp_9 = _mm256_fmadd_pd(X_T_temp_3, broad_temp3, c_temp_9);
         }
+        t_sum += rdtsc() - t0;
         _mm256_store_pd((double *)&log_prob2_T[i + 0 * n_samples + 0], c_temp_1);
         _mm256_store_pd((double *)&log_prob2_T[i + 1 * n_samples + 0], c_temp_2);
         _mm256_store_pd((double *)&log_prob2_T[i + 2 * n_samples + 0], c_temp_3);
@@ -260,10 +278,12 @@ double *estimate_log_gaussian_prob(double *X,
     // }
 
     t1 = rdtsc();
+    time[3] += t_sum;
     fprintf(fp, "%lld\n", t1 - t0);
 
     fprintf(fp, "np.einsum('ij,ij->i', X, X)\n");
     t0 = rdtsc();
+    t_sum = 0;
     // np.einsum("ij,ij->i", X, X)
     // X column major order, use X_T
     __m256d X_T_temp_4;
@@ -287,6 +307,7 @@ double *estimate_log_gaussian_prob(double *X,
             c_temp_6 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
             c_temp_7 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
             c_temp_8 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+            t0 = rdtsc();
             for (int j = 0; j < n_features; j++)
             {
                 X_T_temp_1 = _mm256_load_pd((double *)&X_T[i + j * n_samples + 0]);
@@ -306,6 +327,7 @@ double *estimate_log_gaussian_prob(double *X,
                 c_temp_7 = _mm256_fmadd_pd(X_T_temp_7, X_T_temp_7, c_temp_7);
                 c_temp_8 = _mm256_fmadd_pd(X_T_temp_8, X_T_temp_8, c_temp_8);
             }
+            t_sum += rdtsc() - t0;
             _mm256_store_pd((double *)&log_prob3_einsum[i + 0], c_temp_1);
             _mm256_store_pd((double *)&log_prob3_einsum[i + 4], c_temp_2);
             _mm256_store_pd((double *)&log_prob3_einsum[i + 8], c_temp_3);
@@ -339,10 +361,12 @@ double *estimate_log_gaussian_prob(double *X,
     // _mm256_store_pd((double *)&log_prob3_einsum[29992], c_temp_3);
     // _mm256_store_pd((double *)&log_prob3_einsum[29996], c_temp_4);
     t1 = rdtsc();
+    time[4] += t_sum;
     fprintf(fp, "%lld\n", t1 - t0);
 
     fprintf(fp, "np.outer(np.einsum('ij,ij->i', X, X), precisions)\n");
     t0 = rdtsc();
+    t_sum = 0;
     // np.outer(np.einsum("ij,ij->i", X, X), precisions)
     // [n_samples] outer [n_conponents] -> [n_samples, n_components]
     // for (int i = 0; i < n_samples; i++)
@@ -362,6 +386,7 @@ double *estimate_log_gaussian_prob(double *X,
 
     for (int i = 0; i < n_samples; i += 12)
     {
+        t0 = rdtsc();
         __m256d log_prob3_einsum_temp1 = _mm256_load_pd((double *)&log_prob3_einsum[i]);
         __m256d log_prob3_einsum_temp2 = _mm256_load_pd((double *)&log_prob3_einsum[i + 4]);
         __m256d log_prob3_einsum_temp3 = _mm256_load_pd((double *)&log_prob3_einsum[i + 8]);
@@ -374,6 +399,7 @@ double *estimate_log_gaussian_prob(double *X,
         __m256d log_prob3_temp7 = _mm256_mul_pd(broad_temp3, log_prob3_einsum_temp1);
         __m256d log_prob3_temp8 = _mm256_mul_pd(broad_temp3, log_prob3_einsum_temp2);
         __m256d log_prob3_temp9 = _mm256_mul_pd(broad_temp3, log_prob3_einsum_temp3);
+        t_sum += rdtsc() - t0;
         _mm256_store_pd((double *)&log_prob3_T[i], log_prob3_temp1);
         _mm256_store_pd((double *)&log_prob3_T[i + 4], log_prob3_temp2);
         _mm256_store_pd((double *)&log_prob3_T[i + 8], log_prob3_temp3);
@@ -385,6 +411,7 @@ double *estimate_log_gaussian_prob(double *X,
         _mm256_store_pd((double *)&log_prob3_T[i + 8 + 2 * n_samples], log_prob3_temp9);
     }
     t1 = rdtsc();
+    time[5] += t_sum;
     fprintf(fp, "%lld\n", t1 - t0);
 
     // Naive transpose
@@ -398,6 +425,7 @@ double *estimate_log_gaussian_prob(double *X,
 
     fprintf(fp, "-0.5 * (n_features * np.log(2 * np.pi) + log_prob) + log_det, end_time\n");
     t0 = rdtsc();
+    t_sum = 0;
 
     __m256d b2_11;
     __m256d b2_12;
@@ -416,6 +444,7 @@ double *estimate_log_gaussian_prob(double *X,
     __m256d c_broad_3 = _mm256_broadcast_sd((double *)&constant_broadcast[2]);
     for (int i = 0; i < n_samples; i += 8)
     {
+        t0 = rdtsc();
         b2_11 = _mm256_load_pd((double *)&log_prob2_T[i + 0 * n_samples]);
         b2_12 = _mm256_load_pd((double *)&log_prob2_T[i + 1 * n_samples]);
         b2_13 = _mm256_load_pd((double *)&log_prob2_T[i + 2 * n_samples]);
@@ -440,6 +469,7 @@ double *estimate_log_gaussian_prob(double *X,
         b2_21 = _mm256_add_pd(b2_21, c_broad_1);
         b2_22 = _mm256_add_pd(b2_22, c_broad_2);
         b2_23 = _mm256_add_pd(b2_23, c_broad_3);
+        t_sum += rdtsc() - t0;
         _mm256_store_pd((double *)&res_T[i + 0 + 0 * n_samples], b2_11);
         _mm256_store_pd((double *)&res_T[i + 0 + 1 * n_samples], b2_12);
         _mm256_store_pd((double *)&res_T[i + 0 + 2 * n_samples], b2_13);
@@ -449,6 +479,7 @@ double *estimate_log_gaussian_prob(double *X,
     }
 
     t1 = rdtsc();
+    time[6] += t_sum;
     fprintf(fp, "%lld\n", t1 - t0);
 
     // Naive transpose
