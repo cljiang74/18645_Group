@@ -176,10 +176,10 @@ double *estimate_log_gaussian_prob(double *X,
     c_temp_2 = _mm256_mul_pd(means_temp_2, precisions_broadcast_2);
     c_temp_3 = _mm256_mul_pd(means_temp_3, precisions_broadcast_3);
 
-    // multiply by 2
-    c_temp_1 = _mm256_add_pd(c_temp_1, c_temp_1);
-    c_temp_2 = _mm256_add_pd(c_temp_2, c_temp_2);
-    c_temp_3 = _mm256_add_pd(c_temp_3, c_temp_3);
+    // // multiply by 2
+    // c_temp_1 = _mm256_add_pd(c_temp_1, c_temp_1);
+    // c_temp_2 = _mm256_add_pd(c_temp_2, c_temp_2);
+    // c_temp_3 = _mm256_add_pd(c_temp_3, c_temp_3);
 
     _mm256_store_pd((double *)&log_prob2_means_T_precisions[0], c_temp_1);
     _mm256_store_pd((double *)&log_prob2_means_T_precisions[4], c_temp_2);
@@ -245,6 +245,16 @@ double *estimate_log_gaussian_prob(double *X,
         {
             log_prob2[i * n_components + j] = log_prob2_T[j * n_samples + i];
         }
+    }
+
+    // Printing verification
+    for (int i = 0; i < n_samples; i++)
+    {
+        for (int j = 0; j < n_components; j++)
+        {
+            printf("%.5lf ", log_prob2[i * n_components + j]);
+        }
+        printf("\n");
     }
 
     t1 = rdtsc();
@@ -393,14 +403,14 @@ double *estimate_log_gaussian_prob(double *X,
     //     }
     // }
 
-    double con = n_features * log(2 * PI);
+    double con = -0.5 * n_features * log(2 * PI);
     __m256d res_constant = _mm256_set_pd(con, con, con, con);
     __m256d log_prob1_temp1 = _mm256_broadcast_sd((double *)&log_prob1[0]);
     __m256d log_prob1_temp2 = _mm256_broadcast_sd((double *)&log_prob1[1]);
     __m256d log_prob1_temp3 = _mm256_broadcast_sd((double *)&log_prob1[2]);
-    __m256d log_log_det_temp1 = _mm256_broadcast_sd((double *)&log_det[0]);
-    __m256d log_log_det_temp2 = _mm256_broadcast_sd((double *)&log_det[1]);
-    __m256d log_log_det_temp3 = _mm256_broadcast_sd((double *)&log_det[2]);
+    __m256d log_det_broadcast1 = _mm256_broadcast_sd((double *)&log_det[0]);
+    __m256d log_det_broadcast2 = _mm256_broadcast_sd((double *)&log_det[1]);
+    __m256d log_det_broadcast3 = _mm256_broadcast_sd((double *)&log_det[2]);
     __m256d res_constant2 = _mm256_set_pd(-0.5, -0.5, -0.5, -0.5);
     for (int i = 0; i < n_samples; i += 4)
     {
@@ -413,18 +423,21 @@ double *estimate_log_gaussian_prob(double *X,
         __m256d res_temp1 = _mm256_add_pd(res_constant, log_prob1_temp1);
         __m256d res_temp2 = _mm256_add_pd(res_constant, log_prob1_temp2);
         __m256d res_temp3 = _mm256_add_pd(res_constant, log_prob1_temp3);
-        res_temp1 = _mm256_sub_pd(res_temp1, log_prob2_T_temp1);
-        res_temp2 = _mm256_sub_pd(res_temp2, log_prob2_T_temp2);
-        res_temp3 = _mm256_sub_pd(res_temp3, log_prob2_T_temp3);
+        // res_temp1 = _mm256_sub_pd(res_temp1, log_prob2_T_temp1);
+        // res_temp2 = _mm256_sub_pd(res_temp2, log_prob2_T_temp2);
+        // res_temp3 = _mm256_sub_pd(res_temp3, log_prob2_T_temp3);
         res_temp1 = _mm256_add_pd(res_temp1, log_prob3_T_temp1);
         res_temp2 = _mm256_add_pd(res_temp2, log_prob3_T_temp2);
         res_temp3 = _mm256_add_pd(res_temp3, log_prob3_T_temp3);
         res_temp1 = _mm256_mul_pd(res_temp1, res_constant2);
         res_temp2 = _mm256_mul_pd(res_temp2, res_constant2);
         res_temp3 = _mm256_mul_pd(res_temp3, res_constant2);
-        res_temp1 = _mm256_add_pd(res_temp1, log_log_det_temp1);
-        res_temp2 = _mm256_add_pd(res_temp2, log_log_det_temp2);
-        res_temp3 = _mm256_add_pd(res_temp3, log_log_det_temp3);
+        res_temp1 = _mm256_add_pd(res_temp1, log_prob2_T_temp1);
+        res_temp2 = _mm256_add_pd(res_temp2, log_prob2_T_temp2);
+        res_temp3 = _mm256_add_pd(res_temp3, log_prob2_T_temp3);
+        res_temp1 = _mm256_add_pd(res_temp1, log_det_broadcast1);
+        res_temp2 = _mm256_add_pd(res_temp2, log_det_broadcast2);
+        res_temp3 = _mm256_add_pd(res_temp3, log_det_broadcast3);
         _mm256_store_pd((double *)&res_T[i], res_temp1);
         _mm256_store_pd((double *)&res_T[i + n_samples], res_temp2);
         _mm256_store_pd((double *)&res_T[i + 2 * n_samples], res_temp3);
