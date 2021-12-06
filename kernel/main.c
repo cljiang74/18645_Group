@@ -87,8 +87,8 @@ double *estimate_log_gaussian_prob(double *X,
     double *log_prob2_means_T_precisions = (double *)memalign(64, n_features * n_components * sizeof(double)); // shape: [n_features, n_components]
     double *log_prob2_T = (double *)memalign(64, n_components * n_samples * sizeof(double));                   // shape: [n_components, n_samples]
     double *log_prob3_einsum = (double *)memalign(64, n_samples * n_components * sizeof(double));              // shape: [n_components]
-    double *log_prob3_T = (double *)memalign(64, n_components * n_samples * sizeof(double)); // shape: [n_samples, n_components]
-    double *res_T = (double *)memalign(64, n_samples * n_components * sizeof(double));   
+    double *log_prob3_T = (double *)memalign(64, n_components * n_samples * sizeof(double));                   // shape: [n_samples, n_components]
+    double *res_T = (double *)memalign(64, n_samples * n_components * sizeof(double));
     FILE *fp = fopen("time.txt", "w");
     unsigned long long t0, t1;
 
@@ -239,9 +239,11 @@ double *estimate_log_gaussian_prob(double *X,
     }
 
     // Naive transpose
-    for(int i = 0; i < n_samples; i++) {
-        for(int j=0; j < n_components; j++) {
-            log_prob2[i * n_components + j] = log_prob2_T[j * n_samples + i]; 
+    for (int i = 0; i < n_samples; i++)
+    {
+        for (int j = 0; j < n_components; j++)
+        {
+            log_prob2[i * n_components + j] = log_prob2_T[j * n_samples + i];
         }
     }
 
@@ -401,35 +403,36 @@ double *estimate_log_gaussian_prob(double *X,
     __m256d log_log_det_temp2 = _mm256_broadcast_sd((double *)&log_det[1]);
     __m256d log_log_det_temp3 = _mm256_broadcast_sd((double *)&log_det[2]);
     __m256d res_constant2 = _mm256_set_pd(-0.5, -0.5, -0.5, -0.5);
-    for(int i = 0; i < n_samples; i+=4)
+    for (int i = 0; i < n_samples; i += 4)
     {
-         __m256d log_prob2_T_temp1 = _mm256_load_pd((double *)&log_prob2_T[i]);
-         __m256d log_prob2_T_temp2 = _mm256_load_pd((double *)&log_prob2_T[i + n_samples]);
-         __m256d log_prob2_T_temp3 = _mm256_load_pd((double *)&log_prob2_T[i + 2*n_samples]);
-         __m256d log_prob3_T_temp1 = _mm256_load_pd((double *)&log_prob3_T[i]);
-         __m256d log_prob3_T_temp2 = _mm256_load_pd((double *)&log_prob3_T[i + n_samples]);
-         __m256d log_prob3_T_temp3 = _mm256_load_pd((double *)&log_prob3_T[i + 2*n_samples]);
-         __m256d res_temp1 = _mm256_add_pd(res_constant, log_prob1_temp1);
-         __m256d res_temp2 = _mm256_add_pd(res_constant, log_prob1_temp2);
-         __m256d res_temp3 = _mm256_add_pd(res_constant, log_prob1_temp3);
-         res_temp1 = _mm256_sub_pd(res_temp1, log_prob2_T_temp1);
-         res_temp2 = _mm256_sub_pd(res_temp2, log_prob2_T_temp2);
-         res_temp3 = _mm256_sub_pd(res_temp3, log_prob2_T_temp3);
-         res_temp1 = _mm256_add_pd(res_temp1, log_prob3_T_temp1);
-         res_temp2 = _mm256_add_pd(res_temp2, log_prob3_T_temp2);
-         res_temp3 = _mm256_add_pd(res_temp3, log_prob3_T_temp3);
-         res_temp1 = _mm256_mul_pd(res_temp1, res_constant2);
-         res_temp2 = _mm256_mul_pd(res_temp2, res_constant2);
-         res_temp3 = _mm256_mul_pd(res_temp3, res_constant2);
-         res_temp1 = _mm256_add_pd(res_temp1, log_log_det_temp1);
-         res_temp2 = _mm256_add_pd(res_temp2, log_log_det_temp2);
-         res_temp3 = _mm256_add_pd(res_temp3, log_log_det_temp3);
-         _mm256_store_pd((double *)&res_T[i], res_temp1);
-         _mm256_store_pd((double *)&res_T[i + n_samples], res_temp2);
-         _mm256_store_pd((double *)&res_T[i + 2*n_samples], res_temp3);
-
+        __m256d log_prob2_T_temp1 = _mm256_load_pd((double *)&log_prob2_T[i]);
+        __m256d log_prob2_T_temp2 = _mm256_load_pd((double *)&log_prob2_T[i + n_samples]);
+        __m256d log_prob2_T_temp3 = _mm256_load_pd((double *)&log_prob2_T[i + 2 * n_samples]);
+        __m256d log_prob3_T_temp1 = _mm256_load_pd((double *)&log_prob3_T[i]);
+        __m256d log_prob3_T_temp2 = _mm256_load_pd((double *)&log_prob3_T[i + n_samples]);
+        __m256d log_prob3_T_temp3 = _mm256_load_pd((double *)&log_prob3_T[i + 2 * n_samples]);
+        __m256d res_temp1 = _mm256_add_pd(res_constant, log_prob1_temp1);
+        __m256d res_temp2 = _mm256_add_pd(res_constant, log_prob1_temp2);
+        __m256d res_temp3 = _mm256_add_pd(res_constant, log_prob1_temp3);
+        res_temp1 = _mm256_sub_pd(res_temp1, log_prob2_T_temp1);
+        res_temp2 = _mm256_sub_pd(res_temp2, log_prob2_T_temp2);
+        res_temp3 = _mm256_sub_pd(res_temp3, log_prob2_T_temp3);
+        res_temp1 = _mm256_add_pd(res_temp1, log_prob3_T_temp1);
+        res_temp2 = _mm256_add_pd(res_temp2, log_prob3_T_temp2);
+        res_temp3 = _mm256_add_pd(res_temp3, log_prob3_T_temp3);
+        res_temp1 = _mm256_mul_pd(res_temp1, res_constant2);
+        res_temp2 = _mm256_mul_pd(res_temp2, res_constant2);
+        res_temp3 = _mm256_mul_pd(res_temp3, res_constant2);
+        res_temp1 = _mm256_add_pd(res_temp1, log_log_det_temp1);
+        res_temp2 = _mm256_add_pd(res_temp2, log_log_det_temp2);
+        res_temp3 = _mm256_add_pd(res_temp3, log_log_det_temp3);
+        _mm256_store_pd((double *)&res_T[i], res_temp1);
+        _mm256_store_pd((double *)&res_T[i + n_samples], res_temp2);
+        _mm256_store_pd((double *)&res_T[i + 2 * n_samples], res_temp3);
     }
-   for (int i = 0; i < n_samples; i++)
+
+    // Naive transpose
+    for (int i = 0; i < n_samples; i++)
     {
         for (int j = 0; j < n_components; j++)
         {
