@@ -345,7 +345,7 @@ double *estimate_log_gaussian_prob(double *X,
     broad_temp1 = _mm256_broadcast_sd((double *)&precisions[0]);
     broad_temp2 = _mm256_broadcast_sd((double *)&precisions[1]);
     broad_temp3 = _mm256_broadcast_sd((double *)&precisions[2]);
-     #pragma omp parallel for num_threads(4)
+    //  #pragma omp parallel for num_threads(4)
     for (int i = 0; i < n_samples; i += 12)
     {
         __m256d log_prob3_einsum_temp1 = _mm256_load_pd((double *)&log_prob3_einsum[i]);
