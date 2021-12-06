@@ -198,6 +198,7 @@ double *estimate_log_gaussian_prob(double *X,
     __m256d broad_temp1;
     __m256d broad_temp2;
     __m256d broad_temp3;
+    
     for (int i = 0; i < n_samples; i += 12)
     {
         c_temp_1 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
@@ -239,13 +240,13 @@ double *estimate_log_gaussian_prob(double *X,
     }
 
     // Naive transpose
-    for (int i = 0; i < n_samples; i++)
-    {
-        for (int j = 0; j < n_components; j++)
-        {
-            log_prob2[i * n_components + j] = log_prob2_T[j * n_samples + i];
-        }
-    }
+    // for (int i = 0; i < n_samples; i++)
+    // {
+    //     for (int j = 0; j < n_components; j++)
+    //     {
+    //         log_prob2[i * n_components + j] = log_prob2_T[j * n_samples + i];
+    //     }
+    // }
 
     t1 = rdtsc();
     fprintf(fp, "%lld\n", t1 - t0);
@@ -259,6 +260,7 @@ double *estimate_log_gaussian_prob(double *X,
     __m256d X_T_temp_6;
     __m256d X_T_temp_7;
     __m256d X_T_temp_8;
+    
     for (int i = 0; i < n_samples; i += 32)
     {
         c_temp_1 = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
@@ -343,7 +345,7 @@ double *estimate_log_gaussian_prob(double *X,
     broad_temp1 = _mm256_broadcast_sd((double *)&precisions[0]);
     broad_temp2 = _mm256_broadcast_sd((double *)&precisions[1]);
     broad_temp3 = _mm256_broadcast_sd((double *)&precisions[2]);
-
+     #pragma omp parallel for num_threads(4)
     for (int i = 0; i < n_samples; i += 12)
     {
         __m256d log_prob3_einsum_temp1 = _mm256_load_pd((double *)&log_prob3_einsum[i]);
@@ -370,13 +372,13 @@ double *estimate_log_gaussian_prob(double *X,
     }
 
     // Naive transpose
-    for (int i = 0; i < n_samples; i++)
-    {
-        for (int j = 0; j < n_components; j++)
-        {
-            log_prob3[i * n_components + j] = log_prob3_T[j * n_samples + i];
-        }
-    }
+    // for (int i = 0; i < n_samples; i++)
+    // {
+    //     for (int j = 0; j < n_components; j++)
+    //     {
+    //         log_prob3[i * n_components + j] = log_prob3_T[j * n_samples + i];
+    //     }
+    // }
     t1 = rdtsc();
     fprintf(fp, "%lld\n", t1 - t0);
 
