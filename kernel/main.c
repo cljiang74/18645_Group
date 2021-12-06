@@ -377,7 +377,6 @@ double *estimate_log_gaussian_prob(double *X,
             log_prob3[i * n_components + j] = log_prob3_T[j * n_samples + i];
         }
     }
-    //**********************
     t1 = rdtsc();
     fprintf(fp, "%lld\n", t1 - t0);
 
@@ -440,7 +439,6 @@ double *estimate_log_gaussian_prob(double *X,
         }
     }
 
-    // *********************************
     t1 = rdtsc();
     fprintf(fp, "%lld\n", t1 - t0);
 
