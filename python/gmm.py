@@ -5,12 +5,12 @@ from scipy.stats import multivariate_normal
 import time
 from sklearn_gmm import _estimate_log_gaussian_prob
 
-# Dataset = np.loadtxt('gmm_data.txt')
-Dataset = np.loadtxt('gmm_data_droped.txt')
-Dataset = np.tile(Dataset, (100, 1))
+data_origin = np.loadtxt('gmm_data_droped.txt')
+Dataset = np.tile(data_origin, (100, 1))
 Dataset_T = Dataset.T
 model = mixture.GaussianMixture(n_components=3, covariance_type='spherical', init_params='random', verbose=1)
-model.fit(Dataset)
+model.fit(data_origin)
+predictions = model.predict(data_origin)
 weights_ = model.weights_
 means_ = model.means_
 covariances_ = model.covariances_
@@ -41,7 +41,6 @@ total_time = np.zeros((runs))
 for i in range(runs):
     start_time = time.time()
     pred, time_tmp = _estimate_log_gaussian_prob(Dataset, means_, precisions_cholesky_, 'spherical')
-    # pred = model.predict(Dataset)
     time_tmp = time.time() - start_time
     if i == 0:
         np.savetxt("../kernel/reference.txt", pred, fmt='%.5lf')
@@ -49,18 +48,15 @@ for i in range(runs):
     total_time[i] = time_tmp
     pred = pred.argmax(axis=1)
 print(np.mean(total_time))
-# plt.plot(np.arange(10) * 300 + 300, total_time)
-# plt.savefig('total_time.jpg', dpi = 200)
-# plt.clf()
 
 for i, (color) in enumerate(zip(['blue', 'green', 'red'])):
-    plt.scatter(Dataset[pred == i, 0], Dataset[pred == i, 1], 5, color=color)
+    plt.scatter(data_origin[predictions == i, 0], data_origin[predictions == i, 1], 5, color=color)
 plt.savefig('First and second dimensions plot.jpg', dpi=500)
 plt.clf()
 for i, (color) in enumerate(zip(['blue', 'green', 'red'])):
-    plt.scatter(Dataset[pred == i, 1], Dataset[pred == i, 2], 5, color=color)
+    plt.scatter(data_origin[predictions == i, 1], data_origin[predictions == i, 2], 5, color=color)
 plt.savefig('Second and third dimensions plot.jpg', dpi=500)
 plt.clf()
 for i, (color) in enumerate(zip(['blue', 'green', 'red'])):
-    plt.scatter(Dataset[pred == i, 2], Dataset[pred == i, 3], 5, color=color)
+    plt.scatter(data_origin[predictions == i, 2], data_origin[predictions == i, 3], 5, color=color)
 plt.savefig('Third and fourth dimensions plot.jpg', dpi=500)
